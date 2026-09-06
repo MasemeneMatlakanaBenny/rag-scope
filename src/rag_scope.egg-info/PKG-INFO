@@ -1,0 +1,127 @@
+Metadata-Version: 2.4
+Name: rag-scope
+Version: 0.1.0
+Summary: An open source observability RAG framework.
+Author-email: Masemene Matlakana Benny <bennymasemene46@gmail.com>
+Project-URL: Homepage, https://github.com/MasemeneMatlakanaBenny/ragscope
+Project-URL: Issues, https://github.com/MasemeneMatlakana/ragscope/issues
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: numpy>=1.24.0
+Requires-Dist: pandas>=2.0.0
+Requires-Dist: scipy>=1.10.0
+Requires-Dist: scikit-learn>=1.0.0
+Requires-Dist: bertscope>=0.17.4
+Dynamic: license-file
+
+# RAGScope
+
+<p align="center">
+  <img src="images/ragscope_logo.png" alt="RAGScope — Monitoring Machines Lab" width="720">
+</p>
+
+<p align="center">
+  <strong>Topic-drift observability for retrieval-augmented generation systems.</strong>
+</p>
+
+RAG systems can appear healthy while their knowledge base, retrieved context, or
+user questions gradually move in different directions. RAGScope helps make that
+shift visible. It compares the principal topic words in document collections so
+you can monitor whether the context your system relies on remains aligned with
+the questions it receives and the content it produces.
+
+RAGScope currently focuses on one essential observability capability: **Topic
+Drift**.
+
+## Why RAGScope?
+
+- **Catch misalignment early.** Identify when incoming queries no longer match
+  the topics covered by your knowledge base.
+- **Monitor changing content.** Compare new or generated content to a trusted
+  reference corpus before the shift becomes a quality issue.
+- **Use interpretable similarity scores.** Evaluate topic alignment with Dice,
+  Braun, Jaccard, overlap, and Tanimoto coefficients.
+- **Start small and integrate easily.** Supply document collections and an
+  embedding model; RAGScope handles topic extraction and comparison.
+
+## Installation
+
+Clone the repository, then install the project dependencies and RAGScope:
+
+```bash
+pip install -r requirements.txt
+pip install -e .
+```
+
+## Topic Drift
+
+RAGScope exposes two monitors in `ragscope.topic_drift`:
+
+| Monitor | Use it when you want to compare |
+| --- | --- |
+| `TopicContentQueryDrift` | knowledge-base content with user queries |
+| `TopicSemanticContentDrift` | trusted reference content with new analysis content |
+
+Both monitors provide the same topic-drift workflow:
+
+1. Extract the leading topic words from each document collection.
+2. Detect mismatching topic words.
+3. Calculate an alignment score with Dice, Braun, Jaccard, overlap, or
+   Tanimoto similarity.
+
+## Example: Are user questions covered by the knowledge base?
+
+The following example compares a small knowledge base with incoming questions.
+BERTopic accepts an embedding-model identifier, such as
+`"all-MiniLM-L6-v2"`, or a compatible embedding model object.
+
+```python
+from ragscope.topic_drift import TopicContentQueryDrift
+
+knowledge_base = [
+    "RAG systems retrieve relevant documents before generating an answer.",
+    "Embedding models represent text as vectors for semantic search.",
+    "Topic drift monitoring identifies changes in document collections.",
+]
+
+user_queries = [
+    "How can I monitor topic drift in a retrieval pipeline?",
+    "Which embedding model should I use for semantic search?",
+]
+
+monitor = TopicContentQueryDrift(
+    content_docs=knowledge_base,
+    query_docs=user_queries,
+    embedding_model="all-MiniLM-L6-v2",
+)
+
+# Surface the topic words that do not align between content and queries.
+monitor.detect_mismatching_topics()
+
+# Retrieve the comparison object and calculate Jaccard topic alignment.
+drift = monitor.topic_word_drift()
+jaccard_alignment = drift.jaccard_coeff("words")
+
+print(f"Topic alignment: {jaccard_alignment:.2%}")
+```
+
+A Jaccard score closer to `1.0` indicates stronger overlap between the leading
+topics of your knowledge base and incoming queries. A low score is a useful
+signal to review your content, query routing, or retrieval strategy.
+
+## Where to go next
+
+Read the [Topic Drift documentation](docs/source/topic_drift.rst) for the
+complete API reference, including `TopicSemanticContentDrift` and the available
+similarity methods.
+
+## Conclusion
+
+Reliable RAG systems need more than retrieval metrics—they need visibility into
+whether the system is still operating in the right semantic territory. RAGScope
+gives you a focused starting point: monitor topic alignment, investigate drift,
+and keep your RAG experience grounded in the knowledge your users expect.

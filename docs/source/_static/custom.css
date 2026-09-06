@@ -1,0 +1,23 @@
+/* Keep the professional PyData layout; apply only the RAGScope brand colours. */
+html[data-theme="light"] {
+  --pst-color-primary: #087cff;
+  --pst-color-secondary: #005fc7;
+  --pst-color-link: #006bd6;
+  --pst-color-link-hover: #0053a6;
+  --pst-color-inline-code: #005fc7;
+  --pst-font-family-base: Inter, "Segoe UI", system-ui, sans-serif;
+  --pst-font-family-heading: Inter, "Segoe UI", system-ui, sans-serif;
+}
+
+html[data-theme="dark"] {
+  --pst-color-primary: #2490ff;
+  --pst-color-secondary: #60adff;
+  --pst-color-link: #76b9ff;
+  --pst-color-link-hover: #a8d3ff;
+  --pst-color-inline-code: #76b9ff;
+}
+
+h1, h2, h3 {
+  font-weight: 650;
+  letter-spacing: -0.015em;
+}

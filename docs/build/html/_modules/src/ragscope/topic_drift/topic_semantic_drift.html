@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>src.ragscope.topic_drift.topic_semantic_drift &#8212; ragscope v0.1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/alabaster.css?v=27fed22d" />
+    <script src="../../../../_static/documentation_options.js?v=fa47ad08"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for src.ragscope.topic_drift.topic_semantic_drift</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span><span class="n">Dict</span><span class="p">,</span><span class="n">List</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.ragscope.topic_drift.topic_distr</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_topic_distr</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.ragscope.utils.categorical</span><span class="w"> </span><span class="kn">import</span> <span class="n">detect_mismatches</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.ragscope.drift</span><span class="w"> </span><span class="kn">import</span> <span class="n">SimilarityCategoricalFeatureDrift</span>
+
+
+<div class="viewcode-block" id="TopicSemanticContentDrift">
+<a class="viewcode-back" href="../../../../topic_drift.html#src.ragscope.topic_drift.TopicSemanticContentDrift">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">TopicSemanticContentDrift</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    TopicSemanticContentDrift is used to assess if the topic distribution words matches</span>
+<span class="sd">    between the the reference and analysis document. The main idea is to check if the new documents topics matches</span>
+<span class="sd">    with the previous one based on topic distribution.</span>
+
+<span class="sd">    As such this uses categorical similarity methods such as braun,dice,jaccard,overlap and tanimoto</span>
+<span class="sd">    coefficients.</span>
+<span class="sd">    """</span>
+    <span class="n">ref_content_docs</span><span class="p">:</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">analysis_content_docs</span><span class="p">:</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">embedding_model</span><span class="p">:</span><span class="n">Any</span>
+
+<div class="viewcode-block" id="TopicSemanticContentDrift.ref_topic_distribution">
+<a class="viewcode-back" href="../../../../topic_drift.html#src.ragscope.topic_drift.TopicSemanticContentDrift.ref_topic_distribution">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ref_topic_distribution</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span><span class="nb">float</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        The topic distribution for the reference content.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="n">get_topic_distr</span><span class="p">(</span><span class="n">embedding_model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">embedding_model</span><span class="p">,</span>
+                               <span class="n">text</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">query_docs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TopicSemanticContentDrift.analysis_topic_distribution">
+<a class="viewcode-back" href="../../../../topic_drift.html#src.ragscope.topic_drift.TopicSemanticContentDrift.analysis_topic_distribution">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">analysis_topic_distribution</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span><span class="nb">float</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        The topic distribution for the analysis content.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="n">get_topic_distr</span><span class="p">(</span><span class="n">embedding_model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">embedding_model</span><span class="p">,</span>
+                               <span class="n">text</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">content_docs</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="TopicSemanticContentDrift.topic_words_dict">
+<a class="viewcode-back" href="../../../../topic_drift.html#src.ragscope.topic_drift.TopicSemanticContentDrift.topic_words_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">topic_words_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        stores the topic words in a dict format.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dict[str,str] : a dict with a topic as the key and topic word as the value.</span>
+<span class="sd">        """</span>
+        <span class="n">ref_topic_distr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_topic_distribution</span><span class="p">()</span>
+        <span class="n">ref_words_dict</span><span class="o">=</span><span class="p">{}</span>
+        
+        <span class="n">ana_topic_distr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">analysis_topic_distribution</span><span class="p">()</span>
+        <span class="n">ana_words_dict</span><span class="o">=</span><span class="p">{}</span>
+
+        <span class="k">for</span> <span class="n">ref_topic</span><span class="p">,</span><span class="n">ref_value</span> <span class="ow">in</span> <span class="n">ref_topic_distr</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        
+            <span class="k">for</span> <span class="n">ref_topic_word</span><span class="p">,</span><span class="n">_</span> <span class="ow">in</span> <span class="n">ref_value</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+
+                <span class="n">ref_words_dict</span><span class="p">[</span><span class="n">ref_topic</span><span class="p">]</span><span class="o">=</span><span class="n">ref_topic_word</span>
+
+        
+        <span class="k">for</span> <span class="n">topic</span><span class="p">,</span><span class="n">value</span> <span class="ow">in</span> <span class="n">ana_topic_distr</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        
+            <span class="k">for</span> <span class="n">topic_word</span><span class="p">,</span><span class="n">_</span> <span class="ow">in</span> <span class="n">value</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+
+                <span class="n">ana_words_dict</span><span class="p">[</span><span class="n">topic</span><span class="p">]</span><span class="o">=</span><span class="n">topic_word</span></div>
+
+        
+
+
+<div class="viewcode-block" id="TopicSemanticContentDrift.topic_words_dataframes">
+<a class="viewcode-back" href="../../../../topic_drift.html#src.ragscope.topic_drift.TopicSemanticContentDrift.topic_words_dataframes">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">topic_words_dataframes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        stores the topics from the topic distribution of the two docs in </span>
+<span class="sd">        dataframes.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            pd.DataFrame : two separate dataframes containing main topic words for content base and queries.</span>
+<span class="sd">        """</span>
+        <span class="n">ref_topic_distr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_topic_distribution</span><span class="p">()</span>
+        <span class="n">ref_words</span><span class="o">=</span><span class="p">[]</span>
+
+        <span class="n">ana_topic_distr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">analysis_topic_distribution</span><span class="p">()</span>
+        <span class="n">ana_words</span><span class="o">=</span><span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">topic</span> <span class="ow">in</span> <span class="n">ref_topic_distr</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">topic</span><span class="o">.</span><span class="n">keys</span><span class="p">())[:</span><span class="mi">1</span><span class="p">]:</span>
+
+                <span class="n">ref_words</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">topic</span> <span class="ow">in</span> <span class="n">ana_topic_distr</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">topic</span><span class="o">.</span><span class="n">keys</span><span class="p">())[:</span><span class="mi">1</span><span class="p">]:</span>
+
+                <span class="n">ana_words</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+
+        <span class="n">content_df</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+            <span class="s2">"words"</span><span class="p">:</span><span class="n">ref_words</span>
+           
+        <span class="p">})</span>
+
+        <span class="n">query_df</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+            <span class="s2">"words"</span><span class="p">:</span><span class="n">ana_words</span>
+        <span class="p">})</span>
+
+        <span class="k">return</span> <span class="n">content_df</span><span class="p">,</span><span class="n">query_df</span></div>
+
+
+<div class="viewcode-block" id="TopicSemanticContentDrift.detect_mismatching_topics">
+<a class="viewcode-back" href="../../../../topic_drift.html#src.ragscope.topic_drift.TopicSemanticContentDrift.detect_mismatching_topics">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">detect_mismatching_topics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Detect for mismatching topic words between the the reference and analysis docs.</span>
+<span class="sd">        """</span>
+        <span class="n">content_df</span><span class="p">,</span><span class="n">query_df</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">topic_words_dataframes</span><span class="p">()</span>
+
+        <span class="n">detect_mismatches</span><span class="p">(</span><span class="n">ref_data</span><span class="o">=</span><span class="n">content_df</span><span class="p">,</span>
+                          <span class="n">ana_data</span><span class="o">=</span><span class="n">query_df</span><span class="p">,</span>
+                          <span class="n">feature</span><span class="o">=</span><span class="s2">"words"</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="TopicSemanticContentDrift.topic_word_drift">
+<a class="viewcode-back" href="../../../../topic_drift.html#src.ragscope.topic_drift.TopicSemanticContentDrift.topic_word_drift">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">topic_word_drift</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        The Topic-Content Drift using SimilarityFeatureDrift</span>
+
+<span class="sd">        Return:</span>
+<span class="sd">            SimilarityFeatureDrift : with the reference and analysis docs.</span>
+<span class="sd">        """</span>
+        <span class="n">content_data</span><span class="p">,</span><span class="n">query_data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">topic_words_dataframes</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">SimilarityCategoricalFeatureDrift</span><span class="p">(</span>
+            <span class="n">ref_data</span><span class="o">=</span><span class="n">content_data</span><span class="p">,</span>
+            <span class="n">analysis_data</span><span class="o">=</span><span class="n">query_data</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TopicSemanticContentDrift.dice_coeff">
+<a class="viewcode-back" href="../../../../topic_drift.html#src.ragscope.topic_drift.TopicSemanticContentDrift.dice_coeff">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">dice_coeff</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Computes the dice coefficient between the reference and analysis docs</span>
+<span class="sd">        for topic alignment.</span>
+
+<span class="sd">        Return:</span>
+<span class="sd">            float:dice coefficient value.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">topic_word_drift</span><span class="p">()</span><span class="o">.</span><span class="n">dice_coeff</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="TopicSemanticContentDrift.braun_coeff">
+<a class="viewcode-back" href="../../../../topic_drift.html#src.ragscope.topic_drift.TopicSemanticContentDrift.braun_coeff">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">braun_coeff</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Computes the braun coefficient between the reference and analysis docs</span>
+<span class="sd">        for topic alignment.</span>
+
+<span class="sd">        Return:</span>
+<span class="sd">            float: braun coefficient value.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">topic_word_drift</span><span class="p">()</span><span class="o">.</span><span class="n">braun_coeff</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="TopicSemanticContentDrift.jaccard_coeff">
+<a class="viewcode-back" href="../../../../topic_drift.html#src.ragscope.topic_drift.TopicSemanticContentDrift.jaccard_coeff">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">jaccard_coeff</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Computes the braun coefficient between the reference and analysis docs</span>
+<span class="sd">        to check for topic alignment.</span>
+<span class="sd">        </span>
+<span class="sd">        Return:</span>
+<span class="sd">            float: jaccard coefficient value.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">topic_word_drift</span><span class="p">()</span><span class="o">.</span><span class="n">jaccard_coeff</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="TopicSemanticContentDrift.overlap_coeff">
+<a class="viewcode-back" href="../../../../topic_drift.html#src.ragscope.topic_drift.TopicSemanticContentDrift.overlap_coeff">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">overlap_coeff</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Computes the overlap coefficient between the reference and analysis docs</span>
+<span class="sd">        to check  for topic alignment.</span>
+<span class="sd">        </span>
+<span class="sd">        Return:</span>
+<span class="sd">            float: overlap coefficient value.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">topic_word_drift</span><span class="p">()</span><span class="o">.</span><span class="n">overlap_coeff</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="TopicSemanticContentDrift.tanimoto_coeff">
+<a class="viewcode-back" href="../../../../topic_drift.html#src.ragscope.topic_drift.TopicSemanticContentDrift.tanimoto_coeff">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">tanimoto_coeff</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Computes the tanimoto coefficient between the reference and analysis docs to</span>
+<span class="sd">        check for topic alignment.</span>
+<span class="sd">        </span>
+<span class="sd">        Return:</span>
+<span class="sd">            float: tanimoto coefficient value.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">topic_word_drift</span><span class="p">()</span><span class="o">.</span><span class="n">tanimoto_coeff</span><span class="p">()</span></div>
+</div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">ragscope</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">User guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../topic_drift.html">Topic Drift</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2026, Masemene Matlakana Benny.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
