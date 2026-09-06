@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ragscope" 
+version = "0.1.48"
+description = "An observability RAG framework."
+authors = [
+    {name = "Masemene Matlakana Benny", email = "bennymasemene46@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "numpy>=1.24.0",
+    "pandas>=2.0.0",
+    "scipy>=1.10.0",
+    "requests>=2.32.0",
+    "pydantic>=1.10.16"
+]
+
+[project.urls]
+Homepage = "https://github.com/MasemeneMatlakanaBenny/ragscope"
+Issues = "https://github.com/MasemeneMatlakana/ragscope/issues"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+packages = { find = { where = ["src"], include = ["ragscope", "ragscope.*"] } }
