@@ -60,7 +60,7 @@ BERTopic accepts an embedding-model identifier, such as
 `"all-MiniLM-L6-v2"`, or a compatible embedding model object.
 
 ```python
-from ragscope.topic_drift import TopicContentQueryDrift
+from evidently.llm.ragscope.topic_drift import TopicContentQueryDrift
 
 knowledge_base = [
     "RAG systems retrieve relevant documents before generating an answer.",
