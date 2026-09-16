@@ -84,7 +84,7 @@ monitor.detect_mismatching_topics()
 
 # Retrieve the comparison object and calculate Jaccard topic alignment.
 drift = monitor.topic_word_drift()
-jaccard_alignment = drift.jaccard_coeff("words")
+jaccard_alignment = drift.jaccard_coeff(0
 
 print(f"Topic alignment: {jaccard_alignment:.2%}")
 ```
